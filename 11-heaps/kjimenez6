@@ -1,0 +1,169 @@
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * A class to perform Huffman Encoding using a MinHeap.
+ * The class constructs a Huffman tree to encode input strings based on character frequencies.
+ */
+public class HuffmanEncodingWithHeap {
+
+    /**
+     * Encodes the input string using Huffman encoding.
+     *
+     * input the string to encode
+     * return the encoded string as a binary sequence
+     */
+    public String encode(String input) {
+        if (input == null || input.isEmpty()) {
+            // Return an empty string if input is null or empty
+            return "";
+        }
+
+        // Step 1: Calculate frequencies of each character in the input
+        Map<Character, Integer> frequencyMap = calculateFrequencies(input);
+
+        // Step 2: Build a MinHeap forest using the frequency map
+        MinHeap<HuffmanNode> minHeap = buildForest(frequencyMap);
+
+        // Step 3: Build the Huffman tree using the MinHeap
+        HuffmanNode root = buildTree(minHeap);
+
+        // Step 4: Generate the encoding table from the Huffman tree
+        Map<Character, String> encodingTable = createEncodingTable(root);
+
+        // Step 5: Compress the input string using the encoding table
+        return compress(input, encodingTable);
+    }
+
+    /**
+     * Calculates the frequency of each character in the input string.
+     *
+     * input the string to analyze
+     * return a map containing characters as keys and their frequencies as values
+     */
+    private Map<Character, Integer> calculateFrequencies(String input) {
+        Map<Character, Integer> frequencyMap = new HashMap<>();
+        for (char c : input.toCharArray()) {
+            // Increment the frequency count for each character
+            frequencyMap.put(c, frequencyMap.getOrDefault(c, 0) + 1);
+        }
+        return frequencyMap;
+    }
+
+    /**
+     * Builds the initial MinHeap forest by converting character frequencies into HuffmanNodes.
+     *
+     * @param frequencyMap a map containing character frequencies
+     * @return a MinHeap of HuffmanNodes, where each node represents a character and its frequency
+     */
+    private MinHeap<HuffmanNode> buildForest(Map<Character, Integer> frequencyMap) {
+        MinHeap<HuffmanNode> minHeap = new MinHeap<>();
+        for (Map.Entry<Character, Integer> entry : frequencyMap.entrySet()) {
+            // Create a HuffmanNode for each character and its frequency
+            HuffmanNode node = new HuffmanNode(entry.getKey(), entry.getValue());
+            // Insert the node into the MinHeap
+            minHeap.insert(node);
+        }
+        return minHeap;
+    }
+
+    /**
+     * Constructs the Huffman tree by combining nodes from the MinHeap.
+     *
+     * minHeap the MinHeap containing HuffmanNodes
+     * return the root of the Huffman tree
+     */
+    private HuffmanNode buildTree(MinHeap<HuffmanNode> minHeap) {
+        while (minHeap.size() > 1) {
+            // Step 1: Remove the two smallest nodes from the MinHeap
+            HuffmanNode left = minHeap.removeMin();  // Node with the smallest frequency
+            HuffmanNode right = minHeap.removeMin(); // Node with the second smallest frequency
+
+            // Step 2: Create a new parent node
+            // This node has no symbol and its frequency is the sum of its children's frequencies
+            HuffmanNode parent = new HuffmanNode(null, left.getFrequency() + right.getFrequency());
+
+            // Step 3: Attach the removed nodes as the children of the new parent node
+            parent.setLeft(left);
+            parent.setRight(right);
+
+            // Step 4: Insert the new parent node back into the MinHeap
+            minHeap.insert(parent);
+        }
+        // The last remaining node in the MinHeap is the root of the Huffman tree
+        return minHeap.removeMin();
+    }
+
+    /**
+     * Creates the encoding table by traversing the Huffman tree.
+     * Each character is assigned a binary string based on its position in the tree.
+     *
+     * @param root the root of the Huffman tree
+     * @return a map of characters to their binary Huffman codes
+     */
+    private Map<Character, String> createEncodingTable(HuffmanNode root) {
+        Map<Character, String> encodingTable = new HashMap<>();
+        // Start a recursive traversal from the root to build the encoding table
+        buildEncodingTable(root, "", encodingTable);
+        return encodingTable;
+    }
+
+    /**
+     * Helper method to recursively build the encoding table.
+     * Traverses the tree and assigns binary codes to each character.
+     *
+     * @param node          the current node in the Huffman tree
+     * @param code          the binary code for the current path in the tree
+     * @param encodingTable the map to store character-to-code mappings
+     */
+    private void buildEncodingTable(HuffmanNode node, String code, Map<Character, String> encodingTable) {
+        if (node == null) {
+            return; // Base case: Do nothing if the node is null
+        }
+
+        if (node.getSymbol() != null) {
+            // If the node represents a character, add its code to the encoding table
+            encodingTable.put(node.getSymbol(), code);
+        } else {
+            // Recursively process the left and right subtrees
+            // Append '0' for left and '1' for right to the binary code
+            buildEncodingTable(node.getLeft(), code + "0", encodingTable);
+            buildEncodingTable(node.getRight(), code + "1", encodingTable);
+        }
+    }
+
+    /**
+     * Encodes the input string using the encoding table.
+     *
+     * @param input         the string to encode
+     * @param encodingTable the map of characters to their Huffman codes
+     * @return the encoded string as a sequence of binary digits
+     */
+    private String compress(String input, Map<Character, String> encodingTable) {
+        StringBuilder encodedString = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            // Replace each character with its corresponding binary code
+            encodedString.append(encodingTable.get(c));
+        }
+        return encodedString.toString();
+    }
+}
+
+
+/* Calculate Frequencies (calculateFrequencies):
+* Loops through each character in the input string.
+* Uses a HashMap to count occurrences of each character efficiently.
+* Build Forest (buildForest):
+* Converts each character and its frequency into a HuffmanNode.
+* Inserts all nodes into a MinHeap for efficient retrieval of the smallest nodes.
+* Build Tree (buildTree):
+* Continuously combines the two nodes with the smallest frequencies until only one node remains.
+* This node becomes the root of the Huffman tree.
+* Internal (parent) nodes have no symbol, only a frequency.
+* Create Encoding Table (createEncodingTable):
+* Uses a recursive helper method (buildEncodingTable) to traverse the Huffman tree.
+* Assigns binary codes (0 for left, 1 for right) to characters based on their position in the tree.
+* Compress Input (compress):
+* Replaces each character in the input string with its Huffman code from the encoding table.
+* Produces a binary sequence representing the compressed string.
+*/
